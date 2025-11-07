@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package storage;
+option go_package = "pkg/proto/storagepb";
+
+service StorageService {
+  rpc SaveChunk(SaveChunkRequest) returns (SaveChunkResponse);
+  rpc GetChunk(GetChunkRequest) returns (GetChunkResponse);
+}
+
+message SaveChunkRequest {
+  string file_id = 1;
+  int32 chunk_id = 2;
+  bytes data = 3;
+}
+
+message SaveChunkResponse {
+  bool ok = 1;
+}
+
+message GetChunkRequest {
+  string file_id = 1;
+  int32 chunk_id = 2;
+}
+
+message GetChunkResponse {
+  bytes data = 1;
+}
