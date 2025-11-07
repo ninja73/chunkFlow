@@ -85,6 +85,10 @@ func (d *RoundRobinBalancer) GetChunk(ctx context.Context, fileID string, chunkI
 		return nil, err
 	}
 
+	if !manifest.Completed {
+		return nil, errors.New("file not completed")
+	}
+
 	if chunkID < 0 || chunkID >= len(manifest.Chunks) {
 		return nil, io.EOF
 	}

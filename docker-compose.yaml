@@ -7,7 +7,7 @@ services:
       - "8080:8080"
       - "9000:9000"
     environment:
-      STORAGE_NODES: "storage1:9001,storage2:9002,storage3:9003"
+      STORAGE_NODES: "storage1:9001,storage2:9002,storage3:9003,storage4:9004,storage5:9005,storage6:9006"
     depends_on:
       - storage1
       - storage2
@@ -40,3 +40,30 @@ services:
       PORT: "9003"
     ports:
       - "9003:9003"
+
+  storage4:
+    build:
+      context: .
+      dockerfile: storage.Dockerfile
+    environment:
+      PORT: "9004"
+    ports:
+      - "9004:9004"
+
+  storage5:
+    build:
+      context: .
+      dockerfile: storage.Dockerfile
+    environment:
+      PORT: "9005"
+    ports:
+      - "9005:9005"
+
+  storage6:
+    build:
+      context: .
+      dockerfile: storage.Dockerfile
+    environment:
+      PORT: "9006"
+    ports:
+      - "9006:9006"
