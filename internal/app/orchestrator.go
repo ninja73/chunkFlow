@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"log/slog"
 )
@@ -74,8 +73,6 @@ func (o *Orchestrator) Download(ctx context.Context, fileID string) (io.Reader, 
 				slog.Error("context canceled")
 				return
 			}
-
-			fmt.Println(fileID, chunkID)
 
 			err := o.dist.GetChunk(ctx, fileID, chunkID, pw)
 			if err == io.EOF {
