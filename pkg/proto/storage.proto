@@ -4,25 +4,22 @@ package storage;
 option go_package = "pkg/proto/storagepb";
 
 service StorageService {
-  rpc SaveChunk(SaveChunkRequest) returns (SaveChunkResponse);
-  rpc GetChunk(GetChunkRequest) returns (GetChunkResponse);
+  rpc UploadChunk(stream ChunkChunk) returns (UploadAck);
+  rpc DownloadChunk(ChunkRequest) returns (stream ChunkChunk);
 }
 
-message SaveChunkRequest {
+message ChunkChunk {
   string file_id = 1;
-  int32 chunk_id = 2;
+  int32 chunk_index = 2;
   bytes data = 3;
 }
 
-message SaveChunkResponse {
-  bool ok = 1;
-}
-
-message GetChunkRequest {
+message ChunkRequest {
   string file_id = 1;
-  int32 chunk_id = 2;
+  int32 chunk_index = 2;
 }
 
-message GetChunkResponse {
-  bytes data = 1;
+message UploadAck {
+  bool ok = 1;
+  string msg = 2;
 }

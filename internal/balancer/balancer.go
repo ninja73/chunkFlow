@@ -11,8 +11,8 @@ import (
 )
 
 type ClientRepo interface {
-	SaveChunk(ctx context.Context, chunk *domain.FileChunk) error
-	GetChunk(ctx context.Context, fileID string, chunkID int) (*domain.FileChunk, error)
+	UploadChunk(ctx context.Context, chunk *domain.FileChunk, data io.Reader) error
+	GetChunk(ctx context.Context, fileID string, chunkID int, pw io.Writer) error
 }
 
 type ManifestRepo interface {
@@ -50,7 +50,7 @@ func (d *RoundRobinBalancer) CompleteUpload(ctx context.Context, fileID string) 
 	return d.manifestRepo.MarkCompleted(ctx, fileID)
 }
 
-func (d *RoundRobinBalancer) SaveChunk(ctx context.Context, fileID string, chunkID int, data []byte) error {
+func (d *RoundRobinBalancer) SaveChunk(ctx context.Context, fileID string, chunkID int, data io.Reader) error {
 	d.mu.Lock()
 	targetIndex := d.next
 	d.next = (d.next + 1) % len(d.clients)
@@ -59,9 +59,9 @@ func (d *RoundRobinBalancer) SaveChunk(ctx context.Context, fileID string, chunk
 	chunk := &domain.FileChunk{
 		FileID:  fileID,
 		ChunkID: chunkID,
-		Data:    data,
 	}
-	err := d.clients[targetIndex].SaveChunk(ctx, chunk)
+
+	err := d.clients[targetIndex].UploadChunk(ctx, chunk, data)
 	if err != nil {
 		return err
 	}
@@ -69,7 +69,6 @@ func (d *RoundRobinBalancer) SaveChunk(ctx context.Context, fileID string, chunk
 	loc := domain.ChunkLocation{
 		ChunkIndex: chunkID,
 		RepoIndex:  targetIndex,
-		Size:       int64(len(data)),
 	}
 
 	if err := d.manifestRepo.AppendChunk(ctx, fileID, loc); err != nil {
@@ -79,29 +78,33 @@ func (d *RoundRobinBalancer) SaveChunk(ctx context.Context, fileID string, chunk
 	return nil
 }
 
-func (d *RoundRobinBalancer) GetChunk(ctx context.Context, fileID string, chunkID int) ([]byte, error) {
+func (d *RoundRobinBalancer) GetChunk(ctx context.Context, fileID string, chunkID int, w io.Writer) error {
 	manifest, err := d.manifestRepo.Get(ctx, fileID)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if !manifest.Completed {
-		return nil, errors.New("file not completed")
+		return errors.New("file not completed")
 	}
 
 	if chunkID < 0 || chunkID >= len(manifest.Chunks) {
-		return nil, io.EOF
+		return io.EOF
 	}
 	loc := manifest.Chunks[chunkID]
 	repoIdx := loc.RepoIndex
 	if repoIdx < 0 || repoIdx >= len(d.clients) {
-		return nil, errors.New("invalid repo index in manifest")
+		return errors.New("invalid repo index in manifest")
 	}
 
-	chunk, err := d.clients[repoIdx].GetChunk(ctx, fileID, chunkID)
+	err = d.clients[repoIdx].GetChunk(ctx, fileID, chunkID, w)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return chunk.Data, nil
+	return nil
+}
+
+func (d *RoundRobinBalancer) Size() int {
+	return len(d.clients)
 }

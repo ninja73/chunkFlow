@@ -3,7 +3,6 @@ package domain
 type ChunkLocation struct {
 	ChunkIndex int
 	RepoIndex  int
-	Size       int64
 }
 
 type FileManifest struct {

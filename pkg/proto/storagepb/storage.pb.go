@@ -21,29 +21,29 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type SaveChunkRequest struct {
+type ChunkChunk struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	FileId        string                 `protobuf:"bytes,1,opt,name=file_id,json=fileId,proto3" json:"file_id,omitempty"`
-	ChunkId       int32                  `protobuf:"varint,2,opt,name=chunk_id,json=chunkId,proto3" json:"chunk_id,omitempty"`
+	ChunkIndex    int32                  `protobuf:"varint,2,opt,name=chunk_index,json=chunkIndex,proto3" json:"chunk_index,omitempty"`
 	Data          []byte                 `protobuf:"bytes,3,opt,name=data,proto3" json:"data,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *SaveChunkRequest) Reset() {
-	*x = SaveChunkRequest{}
+func (x *ChunkChunk) Reset() {
+	*x = ChunkChunk{}
 	mi := &file_storage_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *SaveChunkRequest) String() string {
+func (x *ChunkChunk) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SaveChunkRequest) ProtoMessage() {}
+func (*ChunkChunk) ProtoMessage() {}
 
-func (x *SaveChunkRequest) ProtoReflect() protoreflect.Message {
+func (x *ChunkChunk) ProtoReflect() protoreflect.Message {
 	mi := &file_storage_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -55,53 +55,54 @@ func (x *SaveChunkRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SaveChunkRequest.ProtoReflect.Descriptor instead.
-func (*SaveChunkRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use ChunkChunk.ProtoReflect.Descriptor instead.
+func (*ChunkChunk) Descriptor() ([]byte, []int) {
 	return file_storage_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *SaveChunkRequest) GetFileId() string {
+func (x *ChunkChunk) GetFileId() string {
 	if x != nil {
 		return x.FileId
 	}
 	return ""
 }
 
-func (x *SaveChunkRequest) GetChunkId() int32 {
+func (x *ChunkChunk) GetChunkIndex() int32 {
 	if x != nil {
-		return x.ChunkId
+		return x.ChunkIndex
 	}
 	return 0
 }
 
-func (x *SaveChunkRequest) GetData() []byte {
+func (x *ChunkChunk) GetData() []byte {
 	if x != nil {
 		return x.Data
 	}
 	return nil
 }
 
-type SaveChunkResponse struct {
+type ChunkRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
+	FileId        string                 `protobuf:"bytes,1,opt,name=file_id,json=fileId,proto3" json:"file_id,omitempty"`
+	ChunkIndex    int32                  `protobuf:"varint,2,opt,name=chunk_index,json=chunkIndex,proto3" json:"chunk_index,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *SaveChunkResponse) Reset() {
-	*x = SaveChunkResponse{}
+func (x *ChunkRequest) Reset() {
+	*x = ChunkRequest{}
 	mi := &file_storage_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *SaveChunkResponse) String() string {
+func (x *ChunkRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SaveChunkResponse) ProtoMessage() {}
+func (*ChunkRequest) ProtoMessage() {}
 
-func (x *SaveChunkResponse) ProtoReflect() protoreflect.Message {
+func (x *ChunkRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_storage_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -113,112 +114,75 @@ func (x *SaveChunkResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SaveChunkResponse.ProtoReflect.Descriptor instead.
-func (*SaveChunkResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use ChunkRequest.ProtoReflect.Descriptor instead.
+func (*ChunkRequest) Descriptor() ([]byte, []int) {
 	return file_storage_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *SaveChunkResponse) GetOk() bool {
+func (x *ChunkRequest) GetFileId() string {
+	if x != nil {
+		return x.FileId
+	}
+	return ""
+}
+
+func (x *ChunkRequest) GetChunkIndex() int32 {
+	if x != nil {
+		return x.ChunkIndex
+	}
+	return 0
+}
+
+type UploadAck struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
+	Msg           string                 `protobuf:"bytes,2,opt,name=msg,proto3" json:"msg,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UploadAck) Reset() {
+	*x = UploadAck{}
+	mi := &file_storage_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UploadAck) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UploadAck) ProtoMessage() {}
+
+func (x *UploadAck) ProtoReflect() protoreflect.Message {
+	mi := &file_storage_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UploadAck.ProtoReflect.Descriptor instead.
+func (*UploadAck) Descriptor() ([]byte, []int) {
+	return file_storage_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *UploadAck) GetOk() bool {
 	if x != nil {
 		return x.Ok
 	}
 	return false
 }
 
-type GetChunkRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	FileId        string                 `protobuf:"bytes,1,opt,name=file_id,json=fileId,proto3" json:"file_id,omitempty"`
-	ChunkId       int32                  `protobuf:"varint,2,opt,name=chunk_id,json=chunkId,proto3" json:"chunk_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetChunkRequest) Reset() {
-	*x = GetChunkRequest{}
-	mi := &file_storage_proto_msgTypes[2]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetChunkRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetChunkRequest) ProtoMessage() {}
-
-func (x *GetChunkRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_proto_msgTypes[2]
+func (x *UploadAck) GetMsg() string {
 	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetChunkRequest.ProtoReflect.Descriptor instead.
-func (*GetChunkRequest) Descriptor() ([]byte, []int) {
-	return file_storage_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *GetChunkRequest) GetFileId() string {
-	if x != nil {
-		return x.FileId
+		return x.Msg
 	}
 	return ""
-}
-
-func (x *GetChunkRequest) GetChunkId() int32 {
-	if x != nil {
-		return x.ChunkId
-	}
-	return 0
-}
-
-type GetChunkResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Data          []byte                 `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetChunkResponse) Reset() {
-	*x = GetChunkResponse{}
-	mi := &file_storage_proto_msgTypes[3]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetChunkResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetChunkResponse) ProtoMessage() {}
-
-func (x *GetChunkResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_proto_msgTypes[3]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetChunkResponse.ProtoReflect.Descriptor instead.
-func (*GetChunkResponse) Descriptor() ([]byte, []int) {
-	return file_storage_proto_rawDescGZIP(), []int{3}
-}
-
-func (x *GetChunkResponse) GetData() []byte {
-	if x != nil {
-		return x.Data
-	}
-	return nil
 }
 
 var File_storage_proto protoreflect.FileDescriptor
@@ -226,20 +190,22 @@ var File_storage_proto protoreflect.FileDescriptor
 const file_storage_proto_rawDesc = "" +
 	"\n" +
 	"\rstorage.proto\x12\astorage\"Z\n" +
-	"\x10SaveChunkRequest\x12\x17\n" +
-	"\afile_id\x18\x01 \x01(\tR\x06fileId\x12\x19\n" +
-	"\bchunk_id\x18\x02 \x01(\x05R\achunkId\x12\x12\n" +
-	"\x04data\x18\x03 \x01(\fR\x04data\"#\n" +
-	"\x11SaveChunkResponse\x12\x0e\n" +
-	"\x02ok\x18\x01 \x01(\bR\x02ok\"E\n" +
-	"\x0fGetChunkRequest\x12\x17\n" +
-	"\afile_id\x18\x01 \x01(\tR\x06fileId\x12\x19\n" +
-	"\bchunk_id\x18\x02 \x01(\x05R\achunkId\"&\n" +
-	"\x10GetChunkResponse\x12\x12\n" +
-	"\x04data\x18\x01 \x01(\fR\x04data2\x95\x01\n" +
-	"\x0eStorageService\x12B\n" +
-	"\tSaveChunk\x12\x19.storage.SaveChunkRequest\x1a\x1a.storage.SaveChunkResponse\x12?\n" +
-	"\bGetChunk\x12\x18.storage.GetChunkRequest\x1a\x19.storage.GetChunkResponseB\x15Z\x13pkg/proto/storagepbb\x06proto3"
+	"\n" +
+	"ChunkChunk\x12\x17\n" +
+	"\afile_id\x18\x01 \x01(\tR\x06fileId\x12\x1f\n" +
+	"\vchunk_index\x18\x02 \x01(\x05R\n" +
+	"chunkIndex\x12\x12\n" +
+	"\x04data\x18\x03 \x01(\fR\x04data\"H\n" +
+	"\fChunkRequest\x12\x17\n" +
+	"\afile_id\x18\x01 \x01(\tR\x06fileId\x12\x1f\n" +
+	"\vchunk_index\x18\x02 \x01(\x05R\n" +
+	"chunkIndex\"-\n" +
+	"\tUploadAck\x12\x0e\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok\x12\x10\n" +
+	"\x03msg\x18\x02 \x01(\tR\x03msg2\x89\x01\n" +
+	"\x0eStorageService\x128\n" +
+	"\vUploadChunk\x12\x13.storage.ChunkChunk\x1a\x12.storage.UploadAck(\x01\x12=\n" +
+	"\rDownloadChunk\x12\x15.storage.ChunkRequest\x1a\x13.storage.ChunkChunk0\x01B\x15Z\x13pkg/proto/storagepbb\x06proto3"
 
 var (
 	file_storage_proto_rawDescOnce sync.Once
@@ -253,18 +219,17 @@ func file_storage_proto_rawDescGZIP() []byte {
 	return file_storage_proto_rawDescData
 }
 
-var file_storage_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_storage_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_storage_proto_goTypes = []any{
-	(*SaveChunkRequest)(nil),  // 0: storage.SaveChunkRequest
-	(*SaveChunkResponse)(nil), // 1: storage.SaveChunkResponse
-	(*GetChunkRequest)(nil),   // 2: storage.GetChunkRequest
-	(*GetChunkResponse)(nil),  // 3: storage.GetChunkResponse
+	(*ChunkChunk)(nil),   // 0: storage.ChunkChunk
+	(*ChunkRequest)(nil), // 1: storage.ChunkRequest
+	(*UploadAck)(nil),    // 2: storage.UploadAck
 }
 var file_storage_proto_depIdxs = []int32{
-	0, // 0: storage.StorageService.SaveChunk:input_type -> storage.SaveChunkRequest
-	2, // 1: storage.StorageService.GetChunk:input_type -> storage.GetChunkRequest
-	1, // 2: storage.StorageService.SaveChunk:output_type -> storage.SaveChunkResponse
-	3, // 3: storage.StorageService.GetChunk:output_type -> storage.GetChunkResponse
+	0, // 0: storage.StorageService.UploadChunk:input_type -> storage.ChunkChunk
+	1, // 1: storage.StorageService.DownloadChunk:input_type -> storage.ChunkRequest
+	2, // 2: storage.StorageService.UploadChunk:output_type -> storage.UploadAck
+	0, // 3: storage.StorageService.DownloadChunk:output_type -> storage.ChunkChunk
 	2, // [2:4] is the sub-list for method output_type
 	0, // [0:2] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
@@ -283,7 +248,7 @@ func file_storage_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_storage_proto_rawDesc), len(file_storage_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   4,
+			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

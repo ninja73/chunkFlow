@@ -3,17 +3,17 @@ package app
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 )
 
-const bufferSize = 1024 * 1024 * 10 // 10MB
-
 type Balancer interface {
 	StartUpload(ctx context.Context) (string, error)
-	SaveChunk(ctx context.Context, fileID string, chunkID int, data []byte) error
-	GetChunk(ctx context.Context, fileID string, chunkID int) ([]byte, error)
+	SaveChunk(ctx context.Context, fileID string, chunkID int, data io.Reader) error
+	GetChunk(ctx context.Context, fileID string, chunkID int, w io.Writer) error
 	CompleteUpload(ctx context.Context, fileID string) error
+	Size() int
 }
 
 type Orchestrator struct {
@@ -26,34 +26,34 @@ func NewOrchestrator(dist Balancer) *Orchestrator {
 	}
 }
 
-func (o *Orchestrator) Upload(ctx context.Context, r io.Reader) (string, error) {
+func (o *Orchestrator) Upload(ctx context.Context, r io.Reader, totalSize int64) (string, error) {
 	fileID, err := o.dist.StartUpload(ctx)
 	if err != nil {
 		return "", err
 	}
 
-	buf := make([]byte, bufferSize)
+	partSize := totalSize / int64(o.dist.Size())
+	remainder := totalSize % int64(o.dist.Size())
 
-	chunkID := 0
-	for {
+	for chunkID := 0; chunkID < o.dist.Size(); chunkID++ {
 		if ctx.Err() != nil {
 			return "", errors.New("context canceled")
 		}
 
-		n, err := r.Read(buf)
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return "", err
+		size := partSize
+		if chunkID == o.dist.Size()-1 {
+			size += remainder
 		}
 
-		err = o.dist.SaveChunk(ctx, fileID, chunkID, buf[:n])
-		if err != nil {
-			return "", err
+		if size == 0 {
+			continue
 		}
 
-		chunkID++
+		lim := io.LimitReader(r, size)
+
+		if err := o.dist.SaveChunk(ctx, fileID, chunkID, lim); err != nil {
+			return "", err
+		}
 	}
 
 	err = o.dist.CompleteUpload(ctx, fileID)
@@ -66,17 +66,18 @@ func (o *Orchestrator) Upload(ctx context.Context, r io.Reader) (string, error) 
 
 func (o *Orchestrator) Download(ctx context.Context, fileID string) (io.Reader, error) {
 	pr, pw := io.Pipe()
+
 	go func() {
 		defer pw.Close()
-
-		chunkID := 0
-		for {
+		for chunkID := 0; chunkID < o.dist.Size(); chunkID++ {
 			if ctx.Err() != nil {
 				slog.Error("context canceled")
 				return
 			}
 
-			data, err := o.dist.GetChunk(ctx, fileID, chunkID)
+			fmt.Println(fileID, chunkID)
+
+			err := o.dist.GetChunk(ctx, fileID, chunkID, pw)
 			if err == io.EOF {
 				return
 			}
@@ -85,14 +86,6 @@ func (o *Orchestrator) Download(ctx context.Context, fileID string) (io.Reader, 
 				slog.Error(err.Error())
 				return
 			}
-
-			_, err = pw.Write(data)
-			if err != nil {
-				slog.Error(err.Error())
-				return
-			}
-
-			chunkID++
 		}
 	}()
 

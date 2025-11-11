@@ -42,7 +42,7 @@ func uploadFile(t *testing.T, url, fieldName, filePath string) string {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusCreated {
 		t.Fatalf("upload returned non-200 code: %d", resp.StatusCode)
 	}
 

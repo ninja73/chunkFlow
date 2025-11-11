@@ -19,16 +19,16 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	StorageService_SaveChunk_FullMethodName = "/storage.StorageService/SaveChunk"
-	StorageService_GetChunk_FullMethodName  = "/storage.StorageService/GetChunk"
+	StorageService_UploadChunk_FullMethodName   = "/storage.StorageService/UploadChunk"
+	StorageService_DownloadChunk_FullMethodName = "/storage.StorageService/DownloadChunk"
 )
 
 // StorageServiceClient is the client API for StorageService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type StorageServiceClient interface {
-	SaveChunk(ctx context.Context, in *SaveChunkRequest, opts ...grpc.CallOption) (*SaveChunkResponse, error)
-	GetChunk(ctx context.Context, in *GetChunkRequest, opts ...grpc.CallOption) (*GetChunkResponse, error)
+	UploadChunk(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[ChunkChunk, UploadAck], error)
+	DownloadChunk(ctx context.Context, in *ChunkRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ChunkChunk], error)
 }
 
 type storageServiceClient struct {
@@ -39,32 +39,44 @@ func NewStorageServiceClient(cc grpc.ClientConnInterface) StorageServiceClient {
 	return &storageServiceClient{cc}
 }
 
-func (c *storageServiceClient) SaveChunk(ctx context.Context, in *SaveChunkRequest, opts ...grpc.CallOption) (*SaveChunkResponse, error) {
+func (c *storageServiceClient) UploadChunk(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[ChunkChunk, UploadAck], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(SaveChunkResponse)
-	err := c.cc.Invoke(ctx, StorageService_SaveChunk_FullMethodName, in, out, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &StorageService_ServiceDesc.Streams[0], StorageService_UploadChunk_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &grpc.GenericClientStream[ChunkChunk, UploadAck]{ClientStream: stream}
+	return x, nil
 }
 
-func (c *storageServiceClient) GetChunk(ctx context.Context, in *GetChunkRequest, opts ...grpc.CallOption) (*GetChunkResponse, error) {
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type StorageService_UploadChunkClient = grpc.ClientStreamingClient[ChunkChunk, UploadAck]
+
+func (c *storageServiceClient) DownloadChunk(ctx context.Context, in *ChunkRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ChunkChunk], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetChunkResponse)
-	err := c.cc.Invoke(ctx, StorageService_GetChunk_FullMethodName, in, out, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &StorageService_ServiceDesc.Streams[1], StorageService_DownloadChunk_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &grpc.GenericClientStream[ChunkRequest, ChunkChunk]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
 }
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type StorageService_DownloadChunkClient = grpc.ServerStreamingClient[ChunkChunk]
 
 // StorageServiceServer is the server API for StorageService service.
 // All implementations must embed UnimplementedStorageServiceServer
 // for forward compatibility.
 type StorageServiceServer interface {
-	SaveChunk(context.Context, *SaveChunkRequest) (*SaveChunkResponse, error)
-	GetChunk(context.Context, *GetChunkRequest) (*GetChunkResponse, error)
+	UploadChunk(grpc.ClientStreamingServer[ChunkChunk, UploadAck]) error
+	DownloadChunk(*ChunkRequest, grpc.ServerStreamingServer[ChunkChunk]) error
 	mustEmbedUnimplementedStorageServiceServer()
 }
 
@@ -75,11 +87,11 @@ type StorageServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedStorageServiceServer struct{}
 
-func (UnimplementedStorageServiceServer) SaveChunk(context.Context, *SaveChunkRequest) (*SaveChunkResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SaveChunk not implemented")
+func (UnimplementedStorageServiceServer) UploadChunk(grpc.ClientStreamingServer[ChunkChunk, UploadAck]) error {
+	return status.Errorf(codes.Unimplemented, "method UploadChunk not implemented")
 }
-func (UnimplementedStorageServiceServer) GetChunk(context.Context, *GetChunkRequest) (*GetChunkResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetChunk not implemented")
+func (UnimplementedStorageServiceServer) DownloadChunk(*ChunkRequest, grpc.ServerStreamingServer[ChunkChunk]) error {
+	return status.Errorf(codes.Unimplemented, "method DownloadChunk not implemented")
 }
 func (UnimplementedStorageServiceServer) mustEmbedUnimplementedStorageServiceServer() {}
 func (UnimplementedStorageServiceServer) testEmbeddedByValue()                        {}
@@ -102,41 +114,23 @@ func RegisterStorageServiceServer(s grpc.ServiceRegistrar, srv StorageServiceSer
 	s.RegisterService(&StorageService_ServiceDesc, srv)
 }
 
-func _StorageService_SaveChunk_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SaveChunkRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(StorageServiceServer).SaveChunk(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: StorageService_SaveChunk_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(StorageServiceServer).SaveChunk(ctx, req.(*SaveChunkRequest))
-	}
-	return interceptor(ctx, in, info, handler)
+func _StorageService_UploadChunk_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(StorageServiceServer).UploadChunk(&grpc.GenericServerStream[ChunkChunk, UploadAck]{ServerStream: stream})
 }
 
-func _StorageService_GetChunk_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetChunkRequest)
-	if err := dec(in); err != nil {
-		return nil, err
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type StorageService_UploadChunkServer = grpc.ClientStreamingServer[ChunkChunk, UploadAck]
+
+func _StorageService_DownloadChunk_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ChunkRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
 	}
-	if interceptor == nil {
-		return srv.(StorageServiceServer).GetChunk(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: StorageService_GetChunk_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(StorageServiceServer).GetChunk(ctx, req.(*GetChunkRequest))
-	}
-	return interceptor(ctx, in, info, handler)
+	return srv.(StorageServiceServer).DownloadChunk(m, &grpc.GenericServerStream[ChunkRequest, ChunkChunk]{ServerStream: stream})
 }
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type StorageService_DownloadChunkServer = grpc.ServerStreamingServer[ChunkChunk]
 
 // StorageService_ServiceDesc is the grpc.ServiceDesc for StorageService service.
 // It's only intended for direct use with grpc.RegisterService,
@@ -144,16 +138,18 @@ func _StorageService_GetChunk_Handler(srv interface{}, ctx context.Context, dec 
 var StorageService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "storage.StorageService",
 	HandlerType: (*StorageServiceServer)(nil),
-	Methods: []grpc.MethodDesc{
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
 		{
-			MethodName: "SaveChunk",
-			Handler:    _StorageService_SaveChunk_Handler,
+			StreamName:    "UploadChunk",
+			Handler:       _StorageService_UploadChunk_Handler,
+			ClientStreams: true,
 		},
 		{
-			MethodName: "GetChunk",
-			Handler:    _StorageService_GetChunk_Handler,
+			StreamName:    "DownloadChunk",
+			Handler:       _StorageService_DownloadChunk_Handler,
+			ServerStreams: true,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
 	Metadata: "storage.proto",
 }
