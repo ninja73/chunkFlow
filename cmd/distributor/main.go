@@ -17,6 +17,8 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jmoiron/sqlx"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -27,7 +29,15 @@ func main() {
 		log.Fatal(err)
 	}
 
-	orch := app.NewOrchestrator(InitRoundRobinBalance(clients))
+	db, err := InitDB()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer db.Close()
+
+	manifest := repo.NewManifestRepo(db)
+	orch := app.NewOrchestrator(InitRoundRobinBalance(manifest, clients))
 	handler := rest.NewHandler(orch)
 
 	r := chi.NewRouter()
@@ -63,12 +73,12 @@ func main() {
 	slog.Info("server stopped gracefully")
 }
 
-func InitRoundRobinBalance(clients []*repo.GRPCClient) *balancer.RoundRobinBalancer {
+func InitRoundRobinBalance(manifestRepo *repo.ManifestRepo, clients []*repo.GRPCClient) *balancer.RoundRobinBalancer {
 	clientsStore := make([]balancer.ClientRepo, 0, len(clients))
 	for i := range clients {
 		clientsStore = append(clientsStore, clients[i])
 	}
-	manifestRepo := repo.NewInMemoryManifestRepo()
+
 	return balancer.NewRoundRobinBalancer(manifestRepo, clientsStore)
 }
 
@@ -95,4 +105,22 @@ func NewGRPCStorageClient(address string) (*repo.GRPCClient, error) {
 	}
 
 	return repo.NewGRPCClient(storagepb.NewStorageServiceClient(conn)), nil
+}
+
+func InitDB() (*sqlx.DB, error) {
+	db, err := sqlx.Connect("pgx", os.Getenv("DATABASE_URL"))
+	if err != nil {
+		return nil, err
+	}
+
+	db.SetMaxOpenConns(20)
+	db.SetMaxIdleConns(10)
+	db.SetConnMaxLifetime(15 * time.Second)
+
+	err = db.Ping()
+	if err != nil {
+		return nil, err
+	}
+
+	return db, nil
 }

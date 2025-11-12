@@ -1,4 +1,24 @@
 services:
+  postgres:
+    image: postgres:16
+    container_name: chunkflow-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: chunkflow
+      POSTGRES_USER: chunkflow
+      POSTGRES_PASSWORD: chunkflow
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./deployments/sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U chunkflow" ]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+      start_period: 3s
+
   distributor:
     build:
       context: .
@@ -8,10 +28,22 @@ services:
       - "9000:9000"
     environment:
       STORAGE_NODES: "storage1:9001,storage2:9002,storage3:9003,storage4:9004,storage5:9005,storage6:9006"
+      DATABASE_URL: "postgres://chunkflow:chunkflow@postgres:5432/chunkflow?sslmode=disable"
     depends_on:
-      - storage1
-      - storage2
-      - storage3
+      postgres:
+        condition: service_healthy
+      storage1:
+        condition: service_started
+      storage2:
+        condition: service_started
+      storage3:
+        condition: service_started
+      storage4:
+        condition: service_started
+      storage5:
+        condition: service_started
+      storage6:
+        condition: service_started
 
   # storage servers
   storage1:
@@ -22,6 +54,8 @@ services:
       PORT: "9001"
     ports:
       - "9001:9001"
+    volumes:
+      - storage1_data:/data
 
   storage2:
     build:
@@ -31,6 +65,8 @@ services:
       PORT: "9002"
     ports:
       - "9002:9002"
+    volumes:
+      - storage2_data:/data
 
   storage3:
     build:
@@ -40,6 +76,8 @@ services:
       PORT: "9003"
     ports:
       - "9003:9003"
+    volumes:
+      - storage3_data:/data
 
   storage4:
     build:
@@ -49,6 +87,8 @@ services:
       PORT: "9004"
     ports:
       - "9004:9004"
+    volumes:
+      - storage4_data:/data
 
   storage5:
     build:
@@ -58,6 +98,8 @@ services:
       PORT: "9005"
     ports:
       - "9005:9005"
+    volumes:
+      - storage5_data:/data
 
   storage6:
     build:
@@ -67,3 +109,14 @@ services:
       PORT: "9006"
     ports:
       - "9006:9006"
+    volumes:
+      - storage6_data:/data
+
+volumes:
+  postgres_data:
+  storage1_data:
+  storage2_data:
+  storage3_data:
+  storage4_data:
+  storage5_data:
+  storage6_data:

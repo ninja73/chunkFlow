@@ -1,12 +1,12 @@
 package domain
 
 type ChunkLocation struct {
-	ChunkIndex int
-	RepoIndex  int
+	ChunkIndex int `db:"chunk_index"`
+	RepoIndex  int `db:"repo_index"`
 }
 
 type FileManifest struct {
-	FileID    string
-	Completed bool
-	Chunks    []ChunkLocation
+	FileID    string          `db:"file_id"`
+	Completed bool            `db:"completed"`
+	Chunks    []ChunkLocation `db:"-"`
 }

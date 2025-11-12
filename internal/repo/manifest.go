@@ -3,65 +3,59 @@ package repo
 import (
 	"chunkFlow/internal/domain"
 	"context"
-	"errors"
-	"sync"
+
+	"github.com/jmoiron/sqlx"
 )
 
-type InMemoryManifestRepo struct {
-	mu    sync.RWMutex
-	store map[string]*domain.FileManifest
+type ManifestRepo struct {
+	db *sqlx.DB
 }
 
-func NewInMemoryManifestRepo() *InMemoryManifestRepo {
-	return &InMemoryManifestRepo{store: make(map[string]*domain.FileManifest)}
+func NewManifestRepo(db *sqlx.DB) *ManifestRepo {
+	return &ManifestRepo{db: db}
 }
 
-func (r *InMemoryManifestRepo) Create(_ context.Context, fileID string) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+func (r *ManifestRepo) Create(ctx context.Context, fileID string) error {
+	_, err := r.db.ExecContext(ctx, "INSERT INTO manifests (file_id, completed) VALUES ($1, false)", fileID)
+	return err
+}
 
-	if _, ok := r.store[fileID]; ok {
-		return errors.New("manifest exists")
+func (r *ManifestRepo) AppendChunk(ctx context.Context, fileID string, loc domain.ChunkLocation) error {
+	var m domain.FileManifest
+	err := r.db.GetContext(ctx, &m, "SELECT file_id, completed FROM manifests WHERE file_id = $1", fileID)
+	if err != nil {
+		return err
 	}
 
-	r.store[fileID] = &domain.FileManifest{FileID: fileID, Chunks: nil}
+	_, err = r.db.ExecContext(ctx,
+		"INSERT INTO chunk_locations (file_id, chunk_index, repo_index) VALUES ($1, $2, $3)",
+		m.FileID, loc.ChunkIndex, loc.RepoIndex)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
 
-func (r *InMemoryManifestRepo) AppendChunk(_ context.Context, fileID string, loc domain.ChunkLocation) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	m, ok := r.store[fileID]
-	if !ok {
-		return errors.New("manifest not found")
+func (r *ManifestRepo) Get(ctx context.Context, fileID string) (*domain.FileManifest, error) {
+	var m domain.FileManifest
+	err := r.db.GetContext(ctx, &m, "SELECT file_id, completed FROM manifests WHERE file_id = $1", fileID)
+	if err != nil {
+		return nil, err
 	}
-	m.Chunks = append(m.Chunks, loc)
-	r.store[fileID] = m
-	return nil
+
+	var locations []domain.ChunkLocation
+	err = r.db.SelectContext(ctx, &locations, "SELECT chunk_index, repo_index FROM chunk_locations WHERE file_id = $1", fileID)
+	if err != nil {
+		return nil, err
+	}
+
+	m.Chunks = locations
+
+	return &m, nil
 }
 
-func (r *InMemoryManifestRepo) Get(_ context.Context, fileID string) (*domain.FileManifest, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-	m, ok := r.store[fileID]
-	if !ok {
-		return nil, errors.New("not found")
-	}
-	return m, nil
-}
-
-func (r *InMemoryManifestRepo) MarkCompleted(_ context.Context, fileID string) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	m, ok := r.store[fileID]
-	if !ok {
-		return errors.New("not found")
-	}
-
-	m.Completed = true
-	r.store[fileID] = m
-
-	return nil
+func (r *ManifestRepo) MarkCompleted(ctx context.Context, fileID string) error {
+	_, err := r.db.ExecContext(ctx, "UPDATE manifests SET completed = true WHERE file_id = $1", fileID)
+	return err
 }
