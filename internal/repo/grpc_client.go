@@ -8,7 +8,7 @@ import (
 	"io"
 )
 
-const streamBuf = 32 * 1024
+const streamBuf = 1024 * 1024
 
 type GRPCClient struct {
 	client pb.StorageServiceClient

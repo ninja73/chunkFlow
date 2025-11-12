@@ -11,7 +11,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-const streamBuf = 32 * 1024
+const streamBuf = 1024 * 1024
 
 type GRPCServer struct {
 	pb.UnimplementedStorageServiceServer
@@ -52,6 +52,7 @@ func (s *GRPCServer) UploadChunk(stream pb.StorageService_UploadChunkServer) err
 			}
 			outFile = f
 		}
+
 		if len(msg.Data) > 0 {
 			if _, err := outFile.Write(msg.Data); err != nil {
 				return err
